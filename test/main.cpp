@@ -1,6 +1,7 @@
 #include <reader.h>
 #include <debug.h>
 #include <PNGImage.h>
+#include <BMPImage.h>
 #include <zlib.h>
 #include <cstdint>
 #include <cstring>
@@ -10,15 +11,19 @@ using std::cout, std::endl;
 
 int main(int argc, char* argv[])
 {
-	if(argc < 2)
+	if(argc < 3)
 	{
-		cout << "usage: " << argv[0] << " <image>" << endl;
+		cout << "usage: " << argv[0] << " <in file> <out file>" << endl;
 		return 1;
 	}
 	
-	std::string filename = argv[1];
+	std::string infile = argv[1];
+	std::string outfile = argv[2];
+	
 
-	PNGImage image(filename);
-
-	while(image.readNextChunk()){}
+	PNGImage png;
+	png.readFromFile(infile);
+	
+	BMPImage bmp(png);
+	bmp.writeToFile(outfile);
 }

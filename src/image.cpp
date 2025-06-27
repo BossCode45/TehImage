@@ -2,9 +2,8 @@
 
 Image::~Image()
 {
-	if(width != 0 && height != 0)
+	if(width != 0)
 	{
 		delete[] imageData;
 	}
 }
-

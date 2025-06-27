@@ -14,9 +14,7 @@
 
 using std::cout, std::endl;
 
-PNGImage::PNGImage(std::string filename)
-	:reader(filename)
-	,idatData()
+PNGImage::PNGImage()
 {
 	//cout << "Reader good" << endl;
 	REGISTER_CHUNK_READER(IHDR);
@@ -32,11 +30,6 @@ PNGImage::PNGImage(std::string filename)
 
 	//cout << "Chunk readers loaded" << endl;
 
-	char signature[8];
-	uint8_t expected[] = {137, 80, 78, 71, 13, 10, 26, 10};
-	reader.readBytes(signature, 8);
-	if(strncmp(signature, (char*)expected, 8) != 0)
-		cout << "UH OH" << endl;
 
 	idatData = nullptr;
 	idatDataSize = 0;
@@ -50,14 +43,39 @@ PNGImage::~PNGImage()
 	idatDataSize = 0;
 }
 
+int PNGImage::readFromFile(std::string filename)
+{
+	std::unique_ptr<Reader> readerMem(new Reader(filename));
+	reader = readerMem.get();
+	
+	char signature[8];
+	uint8_t expected[] = {137, 80, 78, 71, 13, 10, 26, 10};
+	reader->readBytes(signature, 8);
+	if(strncmp(signature, (char*)expected, 8) != 0)
+	{
+		cout << "Not a PNG" << endl;
+		return 1;
+	}
+
+	while (readNextChunk()) {}
+	
+	return 0;
+};
+
+int PNGImage::writeToFile(std::string filename)
+{
+	cout << "Not implemented" << endl;
+	return 2;
+};
+
 bool PNGImage::readNextChunk()
 {
 	if(end)
 		return false;
-	uint32_t chunkSize = reader.readData<uint32_t>();
+	uint32_t chunkSize = reader->readData<uint32_t>();
 	
 	char chunkType[4];
-	reader.readBytes(chunkType, 4);
+	reader->readBytes(chunkType, 4);
 	std::string chunkName(chunkType, 4);
 	cout << "-------------" << endl;
 	cout << "|Chunk: " << chunkName << "|" << endl;
@@ -66,7 +84,7 @@ bool PNGImage::readNextChunk()
 	if(chunkReaders.count(chunkName) == 0)
 	{
 		cout << "Chunk reader not found!!!" << endl;
-		reader.skipBytes(chunkSize + 4);
+		reader->skipBytes(chunkSize + 4);
 		if(islower(chunkType[0]))
 		{
 			cout << "\tAble to skip chunk" << endl;
@@ -79,20 +97,20 @@ bool PNGImage::readNextChunk()
 	void(PNGImage::*chunkReader)(uint32_t chunkSize) = chunkReaders.find(chunkName)->second;
 	(this->*chunkReader)(chunkSize);
 
-	reader.skipBytes(4); // CRC
+	reader->skipBytes(4); // CRC
 		
 	return true;
 }
 
 DEFINE_CHUNK_READER(IHDR)
 {
-	width = reader.readData<uint32_t>();
-	height = reader.readData<uint32_t>();
-	bitDepth = reader.readData<uint8_t>();
-	colorType = reader.readData<uint8_t>();
-	compressionMethod = reader.readData<uint8_t>();
-	filterMethod = reader.readData<uint8_t>();
-	interlaceMethod = reader.readData<uint8_t>();
+	width = reader->readData<uint32_t>();
+	height = reader->readData<uint32_t>();
+	bitDepth = reader->readData<uint8_t>();
+	colorType = reader->readData<uint8_t>();
+	compressionMethod = reader->readData<uint8_t>();
+	filterMethod = reader->readData<uint8_t>();
+	interlaceMethod = reader->readData<uint8_t>();
 	cout << "Width: " << width << ", Height: " << height << ", Bit depth: " << 0+bitDepth << ", Color type: " << 0+colorType << ", Compression method: " << 0+compressionMethod << ", Filter method: " << 0+filterMethod << ", Interlace method: " << 0+interlaceMethod << endl;
 
 	if(colorType != 2 && colorType != 6)
@@ -108,6 +126,7 @@ DEFINE_CHUNK_READER(IHDR)
 	bpp = colorValues * (bitDepth/8);
 
 	unsigned long imageDataSize = width * height * bpp;
+	//imageDataSize = imageDataSize;
 
 	cout << "Assigning " << imageDataSize << " bytes for image" << endl;
 
@@ -127,48 +146,48 @@ DEFINE_CHUNK_READER(iCCP)
 {
 	cout << "!!! iCCP chunk reader not finished !!!" << endl;
 	std::string profileName;
-	char c = reader.readByte();
+	char c = reader->readByte();
 	chunkSize--;
 	while(c != 0)
 	{
 		profileName.push_back(c);
-		c = reader.readByte();
+		c = reader->readByte();
 		chunkSize--;
 	}
 	cout << profileName << endl;
-	uint8_t compresssionMethod = reader.readByte();
+	uint8_t compresssionMethod = reader->readByte();
 	chunkSize--;
 	cout << 0+compresssionMethod << endl;
-	uint8_t CMF = reader.readByte();
+	uint8_t CMF = reader->readByte();
 	uint8_t CM = CMF & 0b00001111;
 	uint8_t CINFO = (CMF & 0b11110000) >> 4;
 	chunkSize--;
-	uint8_t FLG = reader.readByte();
+	uint8_t FLG = reader->readByte();
 	bool check = (CMF * 256 + FLG)%31 == 0;
 	bool FDICT = FLG & 0b00100000;
 	uint8_t FLEVEL = FLG & 0b11000000;
 	chunkSize--;
 	cout << std::bitset<4>(CM) << ", " << std::bitset<4>(CINFO) << ", " << (check?"Valid":"Failed checksum") << ", " << (FDICT?"Dict is present":"No dict present") << ", " << std::bitset<2>(FLEVEL) << endl;
 	char compressedData[chunkSize - 4];
-	reader.readBytes(compressedData, chunkSize - 4);
+	reader->readBytes(compressedData, chunkSize - 4);
 
 	const int compressedSize = chunkSize - 4;
 	
-	uint32_t checkValue = reader.readData<uint32_t>();
+	uint32_t checkValue = reader->readData<uint32_t>();
 
 	//end = true;
 }
 
 DEFINE_CHUNK_READER(sRGB)
 {
-	renderingIntent = reader.readData<uint8_t>();
+	renderingIntent = reader->readData<uint8_t>();
 	cout << "Rendering intent: " << 0+renderingIntent << endl;
 }
 
 DEFINE_CHUNK_READER(eXIf)
 {
 	char endian[4];
-	reader.readBytes(endian, 4);
+	reader->readBytes(endian, 4);
 	for(int i = 0; i < 2; i++)
 	{
 		cout << endian[i];
@@ -179,7 +198,7 @@ DEFINE_CHUNK_READER(eXIf)
 	}
 	cout << endl;
 	char rest[chunkSize - 4];
-	reader.readBytes(rest, chunkSize - 4);
+	reader->readBytes(rest, chunkSize - 4);
 	cout << std::hex;
 	for(int i = 0; i < chunkSize - 4; i++)
 	{
@@ -191,25 +210,25 @@ DEFINE_CHUNK_READER(eXIf)
 DEFINE_CHUNK_READER(iDOT)
 {
 	cout << "!!! Ignoring iDOT !!!" << endl;
-	reader.skipBytes(chunkSize);
+	reader->skipBytes(chunkSize);
 }
 
 DEFINE_CHUNK_READER(pHYs)
 {
-	pixelsPerX = reader.readData<uint32_t>();
-	pixelsPerY = reader.readData<uint32_t>();
-	unit = reader.readData<uint8_t>();
+	pixelsPerX = reader->readData<uint32_t>();
+	pixelsPerY = reader->readData<uint32_t>();
+	unit = reader->readData<uint8_t>();
 	cout << "Pixels per unit (x): " << pixelsPerX << ", Pixels per unit (y): " << pixelsPerY << ", unit: " << 0+unit << endl;
 }
 
 DEFINE_CHUNK_READER(tIME)
 {
-	year = reader.readData<uint16_t>();
-	month = reader.readData<uint8_t>();
-	day = reader.readData<uint8_t>();
-	hour = reader.readData<uint8_t>();
-	minute = reader.readData<uint8_t>();
-	second = reader.readData<uint8_t>();
+	year = reader->readData<uint16_t>();
+	month = reader->readData<uint8_t>();
+	day = reader->readData<uint8_t>();
+	hour = reader->readData<uint8_t>();
+	minute = reader->readData<uint8_t>();
+	second = reader->readData<uint8_t>();
 	cout << "Image last modified: " << 0+hour << ":" << 0+minute << ":" << 0+second << " " << 0+day << "-" << 0+month << "-" << 0+year << endl;
 }
 
@@ -217,22 +236,22 @@ DEFINE_CHUNK_READER(tEXt)
 {
 	
 	std::string keyword;
-	char c = reader.readByte();
+	char c = reader->readByte();
 	chunkSize--;
 	while(c != 0)
 	{
 		keyword.push_back(c);
-		c = reader.readByte();
+		c = reader->readByte();
 		chunkSize--;
 	}
 	cout << keyword << endl;
 	std::string textString;
-	c = reader.readByte();
+	c = reader->readByte();
 	chunkSize--;
 	while(chunkSize > 0)
 	{
 		textString.push_back(c);
-		c = reader.readByte();
+		c = reader->readByte();
 		chunkSize--;
 	}
 	textString.push_back(c);
@@ -243,11 +262,11 @@ DEFINE_CHUNK_READER(IDAT)
 {
 	if(idatDataSize == 0)
 	{
-		uint8_t CMF = reader.readByte();
+		uint8_t CMF = reader->readByte();
 		uint8_t CM = (CMF & 0b11110000) >> 4;
 		uint8_t CINFO = CMF & 0b00001111;
 		chunkSize--;
-		uint8_t FLG = reader.readByte();
+		uint8_t FLG = reader->readByte();
 		bool check = (CMF * 256 + FLG)%31 == 0;
 		bool FDICT = FLG & 0b00000100;
 		uint8_t FLEVEL = FLG & 0b00000011;
@@ -257,7 +276,7 @@ DEFINE_CHUNK_READER(IDAT)
 	}
 
 	idatData = (uint8_t *)realloc(idatData, idatDataSize + chunkSize);
-	reader.readBytes((char *)&idatData[idatDataSize], chunkSize);
+	reader->readBytes((char *)&idatData[idatDataSize], chunkSize);
 	idatDataSize += chunkSize;
 
 	/*
@@ -268,7 +287,7 @@ DEFINE_CHUNK_READER(IDAT)
 	//cout << (int)puff((unsigned char*)imageData, &imageDataSize, (const unsigned char*)compressedData, &compressedSize) << endl;
 	*/
 	
-	//uint32_t checkValue = reader.readData<uint32_t>();
+	//uint32_t checkValue = reader->readData<uint32_t>();
 
 	//end = true;
 }
@@ -293,28 +312,7 @@ DEFINE_CHUNK_READER(IEND)
 	uint8_t* pngImageData = new uint8_t[imageDataSize];
 	cout << "My inflate " << zlib.decodeData(idatData, idatDataSize, pngImageData, imageDataSize) << endl;
 	end = true;
-	reader.close();
-
-
-	FILE* fd = fopen("tmp.bmp", "w");
-	char magic[] = "BM";
-	fwrite(magic, sizeof(char), 2, fd);
-	uint32_t fileSize = 14 + 12 + width*height*/*(bitDepth/8)*/8*3;
-	fwrite(&fileSize, sizeof(uint32_t), 1, fd);
-	char zero[] = "\0\0\0\0";
-	fwrite(zero, sizeof(char), 4, fd);
-	uint32_t offset = 26;
-	fwrite(&offset, sizeof(uint32_t), 1, fd);
-	uint32_t headerSize = 12;
-	fwrite(&headerSize, sizeof(uint32_t), 1, fd);
-	uint16_t width = this->width;
-	uint16_t height = this->height;
-	uint16_t colorPlanes = 1;
-	uint16_t bitsPerPixel = /*bitDepth*/8*3;
-	fwrite(&width, sizeof(uint16_t), 1, fd);
-	fwrite(&height, sizeof(uint16_t), 1, fd);
-	fwrite(&colorPlanes, sizeof(uint16_t), 1, fd);
-	fwrite(&bitsPerPixel, sizeof(uint16_t), 1, fd);
+	reader->close();
 
 #define imageDataIndex(x, y) imageData[y*width*bpp + x]
 #define pngImageDataIndex(x, y) pngImageData[y*(width*bpp + 1) + x + 1]
@@ -361,17 +359,5 @@ DEFINE_CHUNK_READER(IEND)
 #undef pngImageDataIndex
 #undef filterByte
 	
-	for(int y = height-1; y >= 0; y--)
-	{
-		for(int x = 0; x < width; x++)
-		{
-			Pixel<uint8_t> pixel = getPixel<uint8_t>(x, y);
-			fwrite(&pixel.b, bitDepth/8, 1, fd);
-			fwrite(&pixel.g, bitDepth/8, 1, fd);
-			fwrite(&pixel.r, bitDepth/8, 1, fd);
-		}
-	}
-
 	delete [] pngImageData;
-	fclose(fd);
 }

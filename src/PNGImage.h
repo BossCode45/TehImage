@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -13,15 +14,20 @@
 #define REGISTER_CHUNK_READER(X) chunkReaders.insert({#X, &PNGImage::X})
 #define DEFINE_CHUNK_READER(X) void PNGImage::X(uint32_t chunkSize)
 
-class PNGImage : Image
+class PNGImage : public Image
 {
 private:
 	ZLibInflator zlib;
 	uint8_t* idatData;
 	unsigned long idatDataSize;
 public:
-	PNGImage(std::string filename);
+	PNGImage();
 	~PNGImage();
+
+	template<std::derived_from<Image> T> PNGImage(const T& other) : Image(other) { }
+
+	int readFromFile(std::string filename) override;
+	int writeToFile(std::string filename) override;
 	
 	// sRGB
 	uint8_t renderingIntent;
@@ -56,5 +62,5 @@ private:
 
 	bool end = false;
 
-	Reader reader;
+	Reader *reader;
 };

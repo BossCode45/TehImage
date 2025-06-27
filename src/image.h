@@ -1,7 +1,8 @@
 #pragma once
 
-#include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <string>
 
 template <typename T>
 struct Pixel
@@ -9,6 +10,14 @@ struct Pixel
 	T r, g, b, a;
 };
 
+struct ImageData
+{
+
+
+
+	
+	//unsigned long imageDataSize = 0;
+};
 
 class Image
 {
@@ -19,7 +28,16 @@ protected:
 public:
 	Image() = default;
 	~Image();
+
+	template<std::derived_from<Image> T>
+	Image(const T& other);
+
+	virtual int readFromFile(std::string filename) = 0;
+	virtual int writeToFile(std::string filename) = 0;
 	
+	template <typename T>
+	Pixel<T> getPixel(unsigned int x, unsigned int y);
+
 	uint32_t width = 0;
 	uint32_t height = 0;
 	uint8_t bitDepth;
@@ -27,10 +45,27 @@ public:
 	uint8_t compressionMethod;
 	uint8_t filterMethod;
 	uint8_t interlaceMethod;
-
-	template <typename T>
-	Pixel<T> getPixel(unsigned int x, unsigned int y);
 };
+
+
+
+template<std::derived_from<Image> T> Image::Image(const T& other)
+{
+	this->colorValues = other.colorValues;
+	this->bpp = other.bpp;
+	
+	this->width = other.width;
+	this->height = other.height;
+	this->bitDepth = other.bitDepth;
+	this->colorType = other.colorType;
+	this->compressionMethod = other.compressionMethod;
+	this->filterMethod = other.filterMethod;
+	this->interlaceMethod = other.interlaceMethod;
+	
+	unsigned long imageDataSize = width * height * bpp;
+	imageData = new uint8_t[imageDataSize];
+	mempcpy(imageData, other.imageData, imageDataSize);
+}
 
 
 template <typename T>
