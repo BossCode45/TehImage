@@ -32,7 +32,7 @@ $(LIB): $(INCLUDE_HEADERS) $(OBJS)
 $(OBJS_DIR)/%.o: $(SOURCE_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(INCLUDE_DIR)/%.h: $(SOURCE_DIR)/%.hls lib
+$(INCLUDE_DIR)/%.h: $(SOURCE_DIR)/%.h lib
 	cp $< $@
 
 # Test binary
