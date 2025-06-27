@@ -24,7 +24,8 @@ public:
 	PNGImage();
 	~PNGImage();
 
-	template<std::derived_from<Image> T> PNGImage(const T& other) : Image(other) { }
+	// template<std::derived_from<Image> T> PNGImage(const T& other) : Image(other) { }
+	PNGImage(const Image& other) : Image(other) {}
 
 	int readFromFile(std::string filename) override;
 	int writeToFile(std::string filename) override;

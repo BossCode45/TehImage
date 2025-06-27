@@ -54,10 +54,10 @@ template<> uint32_t Reader::readData<uint32_t>()
 	for(int i = 0; i < 4; i++)
 	{
 		uint8_t byte = readByte();
-		DEBUG(std::cout << std::hex << 0+byte << " ");
+		debug(std::cout << std::hex << 0+byte << " ");
 		num += byte << (8 * (3-i));
 	}
-	DEBUG(std::cout << std::dec << std::endl);
+	debug(std::cout << std::dec << std::endl);
 	return num;
 }
 

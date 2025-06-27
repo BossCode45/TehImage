@@ -1,15 +1,15 @@
 #include "PNGImage.h"
 #include "zlib.h"
-#include "puff.h"
+#include "debug.h"
+
 #include <bitset>
 #include <cctype>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <exception>
 #include <iostream>
-#include <array>
+#include <memory>
 #include <stdexcept>
 
 using std::cout, std::endl;
@@ -130,7 +130,7 @@ DEFINE_CHUNK_READER(IHDR)
 
 	cout << "Assigning " << imageDataSize << " bytes for image" << endl;
 
-	imageData = new uint8_t[imageDataSize];
+	imageData = std::make_unique<uint8_t[]>(imageDataSize);
 	
 /*
 	Scanline<RGBPixel<uint8_t>>* lines = new Scanline<RGBPixel<uint8_t>> [height];
@@ -144,7 +144,6 @@ DEFINE_CHUNK_READER(IHDR)
 
 DEFINE_CHUNK_READER(iCCP)
 {
-	cout << "!!! iCCP chunk reader not finished !!!" << endl;
 	std::string profileName;
 	char c = reader->readByte();
 	chunkSize--;
@@ -167,11 +166,18 @@ DEFINE_CHUNK_READER(iCCP)
 	bool FDICT = FLG & 0b00100000;
 	uint8_t FLEVEL = FLG & 0b11000000;
 	chunkSize--;
-	cout << std::bitset<4>(CM) << ", " << std::bitset<4>(CINFO) << ", " << (check?"Valid":"Failed checksum") << ", " << (FDICT?"Dict is present":"No dict present") << ", " << std::bitset<2>(FLEVEL) << endl;
+	if(CM != 8)
+		cout << "Invalid CM: " << 0+CM << endl;
+	cout << 0+CM << ", " << 0+CINFO << ", " << (check?"Valid":"Failed checksum") << ", " << (FDICT?"Dict is present":"No dict present") << ", " << 0+FLEVEL << endl;
 	char compressedData[chunkSize - 4];
 	reader->readBytes(compressedData, chunkSize - 4);
 
-	const int compressedSize = chunkSize - 4;
+	char outData[1024];
+
+	ZLibInflator inflator;
+	inflator.decodeData((uint8_t*)compressedData, chunkSize - 4, (uint8_t*)outData, 1024);
+
+	cout << "iCCP not supported" << endl;
 	
 	uint32_t checkValue = reader->readData<uint32_t>();
 
@@ -263,15 +269,17 @@ DEFINE_CHUNK_READER(IDAT)
 	if(idatDataSize == 0)
 	{
 		uint8_t CMF = reader->readByte();
-		uint8_t CM = (CMF & 0b11110000) >> 4;
-		uint8_t CINFO = CMF & 0b00001111;
+		uint8_t CM = CMF & 0b00001111;
+		uint8_t CINFO = (CMF & 0b11110000) >> 4;
 		chunkSize--;
 		uint8_t FLG = reader->readByte();
 		bool check = (CMF * 256 + FLG)%31 == 0;
 		bool FDICT = FLG & 0b00000100;
 		uint8_t FLEVEL = FLG & 0b00000011;
 		chunkSize--;
-		cout << std::bitset<4>(CM) << ", " << std::bitset<4>(CINFO) << ", " << (check?"Valid":"Failed checksum") << ", " << (FDICT?"Dict is present":"No dict present") << ", " << std::bitset<2>(FLEVEL) << endl;
+		if(CM != 8)
+			cout << "Invalid CM: " << 0+CM << endl;
+		cout << 0+CM << ", " << 0+CINFO << ", " << (check?"Valid":"Failed checksum") << ", " << (FDICT?"Dict is present":"No dict present") << ", " << 0+FLEVEL << endl;
 		idatData = (uint8_t*)malloc(0);
 	}
 
