@@ -4,6 +4,7 @@
 
 #include <bitset>
 #include <cctype>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -346,6 +347,14 @@ DEFINE_CHUNK_READER(IEND)
 				uint8_t prior = (y>=1)?imageDataIndex(x, (y-1)):0;
 				imageDataIndex(x, y) = up + prior;
 			}
+			else if(filterByte(y) == 3)
+			{
+				uint8_t avg = pngImageDataIndex(x, y);
+				uint8_t a = (x>=bpp)?imageDataIndex((x-bpp), y):0;
+				uint8_t b = (y>=1)?imageDataIndex(x, (y-1)):0;
+				imageDataIndex(x, y) = avg + std::floor((a + b)/2);
+				
+			}
 			else if(filterByte(y) == 4)
 			{
 				uint8_t a = (x>=bpp)?imageDataIndex((x-bpp), y):0;
@@ -358,7 +367,7 @@ DEFINE_CHUNK_READER(IEND)
 			else
 			{
 				cout << "No method for filter type: " << (int)filterByte(y) << ", row: " << y << endl;
-				throw "uh oh";
+				throw std::invalid_argument("Filter type not implemented");
 			}
 		}
 	}
