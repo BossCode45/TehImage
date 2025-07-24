@@ -1,0 +1,11 @@
+*.o
+*.so
+image_test
+include/*
+.cache
+*.bmp
+*.png
+!test.png
+.direnv
+compile_commands.json
+flake.lock
