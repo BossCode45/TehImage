@@ -39,7 +39,7 @@ int BMPImage::writeToFile(std::string filename)
 	{
 		for(int x = 0; x < width; x++)
 		{
-			Pixel pixel = getPixel(x, y);
+			Pixel& pixel = (*this)[x,y];
 			fwrite(&pixel.b, sizeof(uint8_t), 1, fd);
 			fwrite(&pixel.g, sizeof(uint8_t), 1, fd);
 			fwrite(&pixel.r, sizeof(uint8_t), 1, fd);

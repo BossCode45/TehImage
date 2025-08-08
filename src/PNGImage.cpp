@@ -78,9 +78,11 @@ bool PNGImage::readNextChunk()
 	char chunkType[4];
 	reader->readBytes(chunkType, 4);
 	std::string chunkName(chunkType, 4);
-	cout << "-------------" << endl;
-	cout << "|Chunk: " << chunkName << "|" << endl;
-	cout << "-------------" << endl;
+	debug(
+		cout << "-------------" << endl;
+		cout << "|Chunk: " << chunkName << "|" << endl;
+		cout << "-------------" << endl;
+		);
 
 	if(chunkReaders.count(chunkName) == 0)
 	{
@@ -117,6 +119,9 @@ DEFINE_CHUNK_READER(IHDR)
 	if(colorType != 2 && colorType != 6)
 		throw std::invalid_argument("Only color types 2 and 6 are supported");
 
+	if(bitDepth != 8)
+		throw std::invalid_argument("Only bit depth of 8 is supported");
+
 	switch(colorType)
 	{
 	case 2: colorValues = 3; break;
@@ -126,12 +131,12 @@ DEFINE_CHUNK_READER(IHDR)
 
 	bpp = colorValues * (bitDepth/8);
 
-	unsigned long imageDataSize = width * height * bpp;
-	//imageDataSize = imageDataSize;
+	// unsigned long imageDataSize = width * height * bpp;
+	// imageDataSize = imageDataSize;
 
-	cout << "Assigning " << imageDataSize << " bytes for image" << endl;
+	// cout << "Assigning " << imageDataSize << " bytes for image" << endl;
 
-	imageData = std::make_unique<uint8_t[]>(imageDataSize);
+	pixels = std::make_unique<Pixel[]>(width * height);
 	
 /*
 	Scanline<RGBPixel<uint8_t>>* lines = new Scanline<RGBPixel<uint8_t>> [height];
@@ -319,11 +324,12 @@ DEFINE_CHUNK_READER(IEND)
 {
 	unsigned long imageDataSize = height * (width * bpp + 1);
 	uint8_t* pngImageData = new uint8_t[imageDataSize];
+	uint8_t* rawImage = new uint8_t[width * height * bpp];
 	cout << "My inflate " << zlib.decodeData(idatData, idatDataSize, pngImageData, imageDataSize) << endl;
 	end = true;
 	reader->close();
 
-#define imageDataIndex(x, y) imageData[y*width*bpp + x]
+#define imageDataIndex(x, y) rawImage[y*width*bpp + x]
 #define pngImageDataIndex(x, y) pngImageData[y*(width*bpp + 1) + x + 1]
 #define filterByte(y) pngImageDataIndex(-1, y)
 
@@ -375,6 +381,19 @@ DEFINE_CHUNK_READER(IEND)
 #undef imageDataIndex
 #undef pngImageDataIndex
 #undef filterByte
+
+	for(int y = 0; y < height; y++)
+	{
+		for(int x = 0; x < width; x++)
+		{
+			(*this)[x, y].r = rawImage[(y*width + x)*colorValues];
+			(*this)[x, y].g = rawImage[(y*width + x)*colorValues + 1*bitDepth/8];
+			(*this)[x, y].b = rawImage[(y*width + x)*colorValues + 2*bitDepth/8];
+			(*this)[x, y].a = (colorValues == 4)?rawImage[(y*width + x)*colorValues]:255;
+			
+		}
+	}
 	
 	delete [] pngImageData;
+	delete [] rawImage;
 }

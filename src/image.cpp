@@ -15,7 +15,11 @@ Image::Image(const Image& other)
 	this->filterMethod = other.filterMethod;
 	this->interlaceMethod = other.interlaceMethod;
 	
-	unsigned long imageDataSize = width * height * bpp;
-	imageData = std::make_unique<uint8_t[]>(imageDataSize);
-	std::copy_n(other.imageData.get(), imageDataSize, imageData.get());
+	pixels = std::make_unique<Pixel[]>(width*height);
+	std::copy_n(other.pixels.get(), width*height, pixels.get());
 }
+
+Pixel& Image::operator[](int x, int y)
+{
+	return pixels[x + y*width];
+};

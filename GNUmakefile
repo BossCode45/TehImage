@@ -7,9 +7,9 @@ TEST_SRC_DIR := ./test
 
 # Flags
 CXX := g++
-CXXFLAGS := -std=c++20 -fsanitize=address -g
+CXXFLAGS := -std=c++23 -fsanitize=address -g
 LINKFLAGS := -static-libasan
-TEST_CXXFLAGS := -std=c++20 -I$(INCLUDE_DIR) -fsanitize=address -g
+TEST_CXXFLAGS := -std=c++23 -I$(INCLUDE_DIR) -fsanitize=address -g
 TEST_LINKFLAGS := -L$(LIB_DIR) -ltehimage -static-libasan
 
 # Outputs
