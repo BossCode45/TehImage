@@ -8,6 +8,8 @@
         inputs.flake-utils.lib.eachDefaultSystem (system: let
             pkgs = nixpkgs.legacyPackages.${system};
         in {
+            packages.libTehImage = (pkgs.callPackage ./libTehImage.nix {} );
+            packages.default = self.packages.${system}.libTehImage;
             devShells.default = pkgs.mkShell {
                 nativeBuildInputs = [
                     pkgs.gcc
