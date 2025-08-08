@@ -4,12 +4,14 @@ SOURCE_DIR := ./src
 LIB_DIR := ./lib
 INCLUDE_DIR := ./include
 TEST_SRC_DIR := ./test
+out ?= 
+INSTALL_DIR = $(out)
 
 # Flags
 CXX := g++
-CXXFLAGS := -std=c++20 -fsanitize=address -g
+CXXFLAGS := -std=c++23 -fsanitize=address -g
 LINKFLAGS := -static-libasan
-TEST_CXXFLAGS := -std=c++20 -I$(INCLUDE_DIR) -fsanitize=address -g
+TEST_CXXFLAGS := -std=c++23 -I$(INCLUDE_DIR) -fsanitize=address -g
 TEST_LINKFLAGS := -L$(LIB_DIR) -ltehimage -static-libasan
 
 # Outputs
@@ -44,11 +46,15 @@ $(OBJS_DIR)/%.o: $(TEST_SRC_DIR)/%.cpp $(TEST_SOURCE) $(TEST_HEADERS)
 
 
 # Phony
-.PHONY: clean test
+.PHONY: clean test install
 clean:
 	rm -f $(LIB)
 	rm -f $(OBJS_DIR)/*.o
 	rm -f $(TEST)
+install: $(LIB)
+	install -D -m 755 $(LIB) $(INSTALL_DIR)/lib/libtehimage.so
+	install -D -m 644 $(INCLUDE_DIR)/* $(INSTALL_DIR)/include/
+
 
 test: $(TEST)
 
