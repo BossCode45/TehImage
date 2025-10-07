@@ -4,13 +4,18 @@
 #include <cstdint>
 #include <cstring>
 
-class BMPImage : public Image
+namespace TehImage
 {
-private:
-public:
-	// template<std::derived_from<Image> T> BMPImage(const T& other) : Image(other) { }
-	BMPImage(const Image& other) : Image(other) {}
+
+	class BMPImage : public Image
+	{
+	private:
+	public:
+		// template<std::derived_from<Image> T> BMPImage(const T& other) : Image(other) { }
+		BMPImage(const Image& other) : Image(other) {}
 	
-	int readFromFile(std::string filename) override;
-	int writeToFile(std::string filename) override;
-};
+		int readFromFile(std::string filename) override;
+		int writeToFile(std::string filename) override;
+	};
+
+}

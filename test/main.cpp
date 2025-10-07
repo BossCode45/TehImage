@@ -21,9 +21,9 @@ int main(int argc, char* argv[])
 	std::string outfile = argv[2];
 	
 
-	PNGImage png;
+	TehImage::PNGImage png;
 	png.readFromFile(infile);
 	
-	BMPImage bmp(png);
+	TehImage::BMPImage bmp(png);
 	bmp.writeToFile(outfile);
 }

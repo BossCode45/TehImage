@@ -4,30 +4,35 @@
 #include <cstdio>
 #include <string>
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 4096
 
-class Reader
+namespace TehImage
 {
-public:
-	//Bytes are big endian
-	Reader(std::string file);
-	~Reader();
 
-	template <typename T>
+	class Reader
+	{
+	public:
+		//Bytes are big endian
+		Reader(std::string file);
+		~Reader();
+
+		template <typename T>
 		T readData();
 
-	char readByte();
+		char readByte();
 
-	void readBytes(char* out, size_t len);
+		void readBytes(char* out, size_t len);
 
-	void skipBytes(size_t len);
+		void skipBytes(size_t len);
 
-	void close();
-private:
-	char buffer[BUFFER_SIZE];
-	size_t pos;
-	FILE* file;
-	bool ready = false;
+		void close();
+	private:
+		char buffer[BUFFER_SIZE];
+		size_t pos;
+		FILE* file;
+		bool ready = false;
 
-	void refreshBuffer();
-};
+		void refreshBuffer();
+	};
+
+}
