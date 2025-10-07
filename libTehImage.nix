@@ -19,7 +19,7 @@ stdenv.mkDerivation {
     src = fetchgit {
         url = "https://git.tehbox.org/boss/tehimage.git";
         rev = "v0.0.2";
-        hash = "sha256-+kvBfhIqKW5MmtWSZYLUXpOJg14pZ9Qor1N18vcZ2Fc=";
+        hash = "sha256-GrCtLFFa3wKHzXuqziobWz4w0tWzbiShkbXS0Obs+rw=";
     };
 
     preInstall = "mkdir -p $out/include";
