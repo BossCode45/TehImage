@@ -11,11 +11,12 @@
 namespace TehImage
 {
 
-	Reader::Reader(std::string filename)
+	Reader::Reader(std::string filename, FileEndianness fileEndianness)
 	{
 		file = fopen(filename.c_str(), "rb");
 		refreshBuffer();
 		ready = true;
+		this->fileEndianness = fileEndianness;
 	}
 	Reader::~Reader()
 	{
@@ -36,6 +37,24 @@ namespace TehImage
 		pos = 0;
 	}
 
+	void Reader::convertEndian(uint8_t* out, size_t bytes)
+	{
+		constexpr bool LE = std::endian::native == std::endian::little;
+		constexpr bool BE = !LE;
+		if(fileEndianness == NO_CONVERT || (fileEndianness == BIG && BE) || (fileEndianness == LITTLE && LE))
+		{
+			for(int i = 0; i < bytes; i++)
+			{
+				out[i] = readByte();
+			}
+			return;
+		}
+		for(int i = 0; i < bytes; i++)
+		{
+			out[bytes - 1 - i] = readByte();
+		}
+	}
+
 	template<> uint8_t Reader::readData<uint8_t>()
 	{
 		return readByte();
@@ -44,33 +63,36 @@ namespace TehImage
 	template<> uint16_t Reader::readData<uint16_t>()
 	{
 		uint16_t num = 0;
-		for(int i = 0; i < 2; i++)
-		{
-			num += readByte() << (8 * (1-i));
-		}
+		convertEndian((uint8_t*)&num, 2);
+		// for(int i = 0; i < 2; i++)
+		// {
+		// 	num += readByte() << (8 * (1-i));
+		// }
 		return num;
 	}
 
 	template<> uint32_t Reader::readData<uint32_t>()
 	{
 		uint32_t num = 0;
-		for(int i = 0; i < 4; i++)
-		{
-			uint8_t byte = readByte();
-			debug(std::cout << std::hex << 0+byte << " ");
-			num += byte << (8 * (3-i));
-		}
-		debug(std::cout << std::dec << std::endl);
+		convertEndian((uint8_t*)&num, 4);
+		// for(int i = 0; i < 4; i++)
+		// {
+		// 	// uint8_t byte = readByte();
+		// 	// debug(std::cout << std::hex << 0+byte << " ");
+		// 	num += ((uint8_t) readByte()) << (8 * (3-i));
+		// }
+		// // debug(std::cout << std::dec << std::endl);
 		return num;
 	}
 
 	template<> uint64_t Reader::readData<uint64_t>()
 	{
 		uint64_t num = 0;
-		for(int i = 0; i < 8; i++)
-		{
-			num += readByte() << (8 * (7-i));
-		}
+		convertEndian((uint8_t*)&num, 8);
+		// for(int i = 0; i < 8; i++)
+		// {
+		// 	num += readByte() << (8 * (7-i));
+		// }
 		return num;
 	}
 

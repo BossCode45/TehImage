@@ -1,4 +1,5 @@
 #include "PNGImage.h"
+#include "reader.h"
 #include "zlib.h"
 #include "debug.h"
 
@@ -9,6 +10,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <endian.h>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -49,7 +51,7 @@ namespace TehImage
 
 	int PNGImage::readFromFile(std::string filename)
 	{
-		std::unique_ptr<Reader> readerMem(new Reader(filename));
+		std::unique_ptr<Reader> readerMem(new Reader(filename, FileEndianness::BIG));
 		reader = readerMem.get();
 	
 		char signature[8];

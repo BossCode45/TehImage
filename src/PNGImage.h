@@ -19,10 +19,6 @@ namespace TehImage
 
 	class PNGImage : public Image
 	{
-	private:
-		ZLibInflator zlib;
-		uint8_t* idatData;
-		unsigned long idatDataSize;
 	public:
 		PNGImage();
 		~PNGImage();
@@ -63,6 +59,10 @@ namespace TehImage
 		CHUNK_READER(tEXt);
 		CHUNK_READER(IDAT);
 		CHUNK_READER(IEND);
+
+		ZLibInflator zlib;
+		uint8_t* idatData;
+		unsigned long idatDataSize;
 
 		bool end = false;
 
