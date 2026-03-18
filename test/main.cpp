@@ -2,6 +2,7 @@
 #include <debug.h>
 #include <PNGImage.h>
 #include <BMPImage.h>
+#include <WEBPImage.h>
 #include <zlib.h>
 #include <cstdint>
 #include <cstring>
@@ -21,9 +22,9 @@ int main(int argc, char* argv[])
 	std::string outfile = argv[2];
 	
 
-	TehImage::PNGImage png;
-	png.readFromFile(infile);
+	TehImage::WEBPImage webp;
+	webp.readFromFile(infile);
 	
-	TehImage::BMPImage bmp(png);
+	TehImage::BMPImage bmp(webp);
 	bmp.writeToFile(outfile);
 }
