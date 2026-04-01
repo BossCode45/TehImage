@@ -62,4 +62,5 @@ $(OBJS_DIR)/reader.o: $(SOURCE_DIR)/debug.h
 $(OBJS_DIR)/image.o:
 $(OBJS_DIR)/PNGImage.o: $(SOURCE_DIR)/debug.h $(SOURCE_DIR)/image.h
 $(OBJS_DIR)/BMPImage.o: $(SOURCE_DIR)/image.h
-$(OBJS_DIR)/zlib.o:
+$(OBJS_DIR)/zlib.o: $(SOURCE_DIR)/HashTable.h
+$(OBJS_DIR)/HashTable.o:

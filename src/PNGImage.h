@@ -60,7 +60,7 @@ namespace TehImage
 		CHUNK_READER(IDAT);
 		CHUNK_READER(IEND);
 
-		ZLibInflator zlib;
+		ZLib zlib;
 		uint8_t* idatData;
 		unsigned long idatDataSize;
 

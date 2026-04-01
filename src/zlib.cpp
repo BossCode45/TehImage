@@ -1,5 +1,7 @@
 #include "zlib.h"
 
+#include "HashTable.h"
+
 #include <bitset>
 #include <cstdint>
 #include <cstring>
@@ -13,8 +15,25 @@ using std::cout, std::endl;
 
 namespace TehImage
 {
+	
+	const unsigned int lenStart[] = { /* Size base for length codes 257..285 */
+		3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31,
+		35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258};
+	const unsigned int lenExtra[] = { /* Extra bits for length codes 257..285 */
+		0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2,
+		3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0};
 
-	void ZLibInflator::calculateCodes(uint8_t* lengths, uint16_t* codesOut, int codeCount)
+	
+	const unsigned int distStart[] = { /* Offset base for distance codes 0..29 */
+		1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193,
+		257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145,
+		8193, 12289, 16385, 24577};
+	const unsigned int distExtra[] = { /* Extra bits for distance codes 0..29 */
+		0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6,
+		7, 7, 8, 8, 9, 9, 10, 10, 11, 11,
+		12, 12, 13, 13};
+
+	void ZLib::calculateCodes(uint8_t* lengths, uint16_t* codesOut, int codeCount)
 	{
 		const int biggestLen = 15;
 
@@ -43,14 +62,12 @@ namespace TehImage
 		}
 	}
 
-	void ZLibInflator::buildHuffmanTree(uint8_t* lengths, uint16_t* codes, int codeCount)
+	void ZLib::buildHuffmanTree(uint8_t* lengths, uint16_t* codes, int codeCount)
 	{
 		buildHuffmanTree(lengths, codes, codeCount, &tree);
 	}
 
-
-
-	void ZLibInflator::buildHuffmanTree(uint8_t* lengths, uint16_t* codes, int codeCount, HuffmanTree* tree)
+	void ZLib::buildHuffmanTree(uint8_t* lengths, uint16_t* codes, int codeCount, HuffmanTree* tree)
 	{
 		for(uint16_t i = 0; i < codeCount; i++)
 		{
@@ -87,7 +104,32 @@ namespace TehImage
 		}
 	}
 
-	void ZLibInflator::buildStaticHuffmanTree()
+	void ZLib::getStaticHuffmanCodes(uint16_t* codesOut, uint8_t* codeLensOut, uint16_t* distCodesOut, uint8_t* distCodeLensOut)
+	{
+		
+		const int codeCount = 288;
+		for(int i = 0; i < codeCount; i++)
+		{
+			if(i < 144)
+				codeLensOut[i] = 8;
+			else if(i < 256)
+				codeLensOut[i] = 9;
+			else if(i < 280)
+				codeLensOut[i] = 7;
+			else if(i < 288)
+				codeLensOut[i] = 8;
+		}
+		calculateCodes(codeLensOut, codesOut, codeCount);
+	
+		const uint8_t nDistCodes = 32;
+
+		for(int i = 0; i < nDistCodes; i++)
+			distCodeLensOut[i] = 5;
+
+		calculateCodes(distCodeLensOut, distCodesOut, nDistCodes);
+	}
+	
+	void ZLib::buildStaticHuffmanTree()
 	{
 		if(staticTree)
 			return;
@@ -96,37 +138,23 @@ namespace TehImage
 		staticTree = true;
 		haveTree = true;
 	}
-	void ZLibInflator::buildStaticHuffmanTree(HuffmanTree* treeOut, HuffmanTree* distTreeOut)
+	void ZLib::buildStaticHuffmanTree(HuffmanTree* treeOut, HuffmanTree* distTreeOut)
 	{
 		const int codeCount = 288;
 		uint8_t lens[codeCount];
 		uint16_t codes[codeCount];
-		for(int i = 0; i < codeCount; i++)
-		{
-			if(i < 144)
-				lens[i] = 8;
-			else if(i < 256)
-				lens[i] = 9;
-			else if(i < 280)
-				lens[i] = 7;
-			else if(i < 288)
-				lens[i] = 8;
-		}
-		calculateCodes(lens, codes, codeCount);
-		buildHuffmanTree(lens, codes, codeCount, treeOut);
 	
-		uint8_t nDistCodes = 32;
+		const uint8_t nDistCodes = 32;
 		uint8_t distCodeLens[nDistCodes];
 		uint16_t distCodes[nDistCodes];
 
-		for(int i = 0; i < nDistCodes; i++)
-			distCodeLens[i] = i;
+		getStaticHuffmanCodes(codes, lens, distCodes, distCodeLens);
 
-		calculateCodes(distCodeLens, distCodes, nDistCodes);
+		buildHuffmanTree(lens, codes, codeCount, treeOut);
 		buildHuffmanTree(distCodeLens, distCodes, nDistCodes, distTreeOut);
 	}
 
-	void ZLibInflator::buildDynamicHuffmanTree(StreamData* stream)
+	void ZLib::buildDynamicHuffmanTree(StreamData* stream)
 	{
 		if(haveTree)
 		{
@@ -136,7 +164,7 @@ namespace TehImage
 		buildDynamicHuffmanTree(stream, &tree, &distTree);
 		haveTree = true;
 	}
-	void ZLibInflator::buildDynamicHuffmanTree(StreamData* stream, HuffmanTree* treeOut, HuffmanTree* distTreeOut)
+	void ZLib::buildDynamicHuffmanTree(StreamData* stream, HuffmanTree* treeOut, HuffmanTree* distTreeOut)
 	{
 		unsigned int nLitCodes = nextBits(stream, 5) + 257;
 		uint16_t litCodes[nLitCodes];
@@ -220,12 +248,12 @@ namespace TehImage
 		free();
 	}
 
-	uint16_t ZLibInflator::getNextCode(StreamData* stream)
+	uint16_t ZLib::getNextCode(StreamData* stream)
 	{
 		return getNextCode(stream, &tree);
 	}
 
-	uint16_t ZLibInflator::getNextCode(StreamData* stream, HuffmanTree* tree)
+	uint16_t ZLib::getNextCode(StreamData* stream, HuffmanTree* tree)
 	{
 		while(tree->val == 0xFFFF)
 		{
@@ -240,7 +268,7 @@ namespace TehImage
 		return tree->val;
 	}
 
-	bool ZLibInflator::nextBit(StreamData* stream)
+	bool ZLib::nextBit(StreamData* stream)
 	{
 		long bit = stream->pos % 8;
 		long byte = stream->pos / 8;
@@ -254,38 +282,51 @@ namespace TehImage
 		return (stream->data[byte] & (0b1 << bit))?0b1:0b0;
 	}
 
-	uint16_t ZLibInflator::nextBits(StreamData* stream, int bits)
+	uint16_t ZLib::nextBits(StreamData* stream, int count)
 	{
-		if(bits > 16)
-			cout << "Too many bits(" << bits << ")!!!" << endl;
+		if(count > 16)
+			cout << "Too many bits(" << count << ")!!!" << endl;
 		uint16_t out = 0;
-		for(int i = 0; i < bits; i++)
+		for(int i = 0; i < count; i++)
 		{
 			out |= nextBit(stream) << i;
 		}
 		return out;
 	}
 
-	int ZLibInflator::decodeData(uint8_t* data, unsigned long length, uint8_t* out, unsigned long outLength)
+	void ZLib::writeBit(StreamData* stream, bool bit)
+	{
+		long bitPos = stream->pos % 8;
+		long bytePos = stream->pos / 8;
+		if(bytePos >= stream->length)
+		{
+			cout << bytePos << " " << stream->length << endl;
+			throw std::out_of_range("Ran out of space");
+		}
+		stream->pos++;
+		if(bit)
+			stream->data[bytePos] |= (0b1 << bitPos);
+	}
+
+	void ZLib::writeBits(StreamData* stream, int count, uint16_t bits)
+	{
+		for(int i = 0; i < count; i++)
+		{
+			writeBit(stream, bits & (0b1 << i));
+		}
+	}
+
+	void ZLib::writeCode(StreamData* stream, uint16_t code, uint8_t codeLen)
+	{
+		for(int i = codeLen - 1; i >= 0; i--)
+		{
+			writeBit(stream, code & (0b1 << i));
+		}
+	}
+
+	int ZLib::decodeData(uint8_t* data, unsigned long length, uint8_t* out, unsigned long outLength)
 	{
 		staticTree = false;
-		const unsigned int lenStart[] = { /* Size base for length codes 257..285 */
-			3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31,
-			35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258};
-		const unsigned int lenExtra[] = { /* Extra bits for length codes 257..285 */
-			0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2,
-			3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0};
-
-	
-		const unsigned int distStart[] = { /* Offset base for distance codes 0..29 */
-			1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193,
-			257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145,
-			8193, 12289, 16385, 24577};
-		const unsigned int distExtra[] = { /* Extra bits for distance codes 0..29 */
-			0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6,
-			7, 7, 8, 8, 9, 9, 10, 10, 11, 11,
-			12, 12, 13, 13};
-
 	
 		StreamData stream = { data, length, 0};
 		long outPos = 0;
@@ -295,23 +336,22 @@ namespace TehImage
 		{
 
 			final = nextBit(&stream);
-			int method = nextBits(&stream, 2);
+			CompressionType method = (CompressionType)nextBits(&stream, 2);
 
 			//cout << (final?"Final chunk!\n":"") << "Compression method: " << method << endl;
 
 			//cout << outPos << " " << outLength << endl;
 		
-			if(method == 1)
+			if(method == CompressionType::STATIC_CODES)
 				buildStaticHuffmanTree();
-			else if(method == 2)
+			else if(method == CompressionType::DYNAMIC_CODES)
 				buildDynamicHuffmanTree(&stream);
-			else if(method == 0)
+			else if(method == CompressionType::NONE)
 			{
 				while(stream.pos%8 != 0)
 					stream.pos++;
-				uint16_t LEN = nextBits(&stream, 16);
-				uint16_t NLEN = nextBits(&stream, 16);
-				NLEN++;
+				int16_t LEN = nextBits(&stream, 16);
+				int16_t NLEN = nextBits(&stream, 16) + 1;
 				if(LEN + NLEN != 0)
 					throw std::invalid_argument("NLEN and LEN don't match");
 				for(int i = 0; i < LEN; i++)
@@ -356,6 +396,110 @@ namespace TehImage
 		while(!final);
 
 		return 0;
+	}
+
+	int ZLib::encodeData(uint8_t* data, unsigned long length, uint8_t* out, unsigned long outLength)
+	{
+		
+		StreamData outStream = { out, outLength, 0};
+		unsigned long inPos = 0;
+
+		CompressionType compressionType = STATIC_CODES;
+
+		// BFINAL
+		writeBit(&outStream, 1);
+		// BTYPE
+		writeBits(&outStream, 2, compressionType);
+
+		if(compressionType == NONE)
+		{
+			// Padding for non-compressed
+			while(outStream.pos % 8 != 0)
+				writeBit(&outStream, 0);
+			
+			// LEN
+			writeBits(&outStream, 16, (uint16_t) length);
+			// NLEN
+			writeBits(&outStream, 16, ((uint16_t) length) ^ 65535);
+
+			// Write the actual bytes
+			while(inPos < length)
+			{
+				writeBits(&outStream, 8, data[inPos++]);
+			}
+
+			// Return length of compressed data in bytes
+			return (outStream.pos / 8) + ((outStream.pos % 8 == 0)?0:1);
+		}
+		if(compressionType == STATIC_CODES)
+		{
+			uint16_t codes[288];
+			uint8_t codeLens[288];
+			uint16_t distCodes[32];
+			uint8_t distCodeLens[32];
+			getStaticHuffmanCodes(codes, codeLens, distCodes, distCodeLens);
+
+			// cout << inPos << " " << length << endl;
+			HashTable hashTable(255);
+			while(inPos < length)
+			{
+				if(inPos + 2 >= length)
+				{
+					writeCode(&outStream, codes[data[inPos]], codeLens[data[inPos]]);
+					inPos++;
+					continue;
+				}
+				
+				char curr[3];
+				memcpy(curr, &data[inPos], 3);
+				if(hashTable.contains(curr))
+				{
+					unsigned long pos = hashTable.get(curr);
+					int length = 3;
+					while(data[pos + length] == data[inPos + length])
+						length++;
+
+					
+					uint16_t lenCode, lenExtraBits;
+					for(uint16_t i = 0; i < 30; i++)
+					{
+						if(lenStart[i] <= length && lenStart[i] + (0b1 << lenExtra[i]) - 1 >= length)
+						{
+							lenCode = i;
+							lenExtraBits = length - lenStart[i];
+						}
+					}
+					unsigned long dist = inPos - pos;
+					uint16_t distCode, distExtraBits;
+					for(uint16_t i = 0; i < 30; i++)
+					{
+						if(distStart[i] <= dist && distStart[i] + (0b1 << distExtra[i]) - 1 >= dist)
+						{
+							distCode = i;
+							distExtraBits = dist - distCodes[i];
+						}
+					}
+
+					writeCode(&outStream, codes[lenCode + 257], codeLens[lenCode + 257]);
+					writeBits(&outStream, lenExtra[lenCode], lenExtraBits);
+					writeCode(&outStream, distCodes[distCode], distCodeLens[distCode]);
+					writeBits(&outStream, distExtra[distCode], distExtraBits);
+					inPos += length;
+					
+				}
+				else
+				{
+					writeCode(&outStream, codes[data[inPos]], codeLens[data[inPos]]);
+					hashTable.insert(curr, inPos);
+					inPos++;
+				}
+			}
+			
+			return (outStream.pos / 8) + ((outStream.pos % 8 == 0)?0:1);
+		}
+
+		// Return length of compressed data in bytes
+		return (outStream.pos / 8) + ((outStream.pos % 8 == 0)?0:1);
 	}
 
 }

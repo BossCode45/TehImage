@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cstdint>
+#include <list>
 #include <string>
+#include <vector>
 
 namespace TehImage
 {
@@ -23,7 +25,16 @@ namespace TehImage
 		unsigned long pos;
 	};
 
-	class ZLibInflator
+	enum CompressionType : uint16_t
+	{
+		NONE = 0b00,
+		STATIC_CODES = 0b01,
+		DYNAMIC_CODES = 0b10,
+		RESERVED = 0b11
+	};
+
+	// RFC 1950/1951
+	class ZLib
 	{
 	private:
 		HuffmanTree tree;
@@ -31,17 +42,24 @@ namespace TehImage
 		bool staticTree = false;
 		bool haveTree = false;
 	public:
-		ZLibInflator() = default;
-		~ZLibInflator() = default;
+		ZLib() = default;
+		~ZLib() = default;
 
 		static bool nextBit(StreamData* stream);
-		static uint16_t nextBits(StreamData* stream, int bits); // Max 16 bits
+		static uint16_t nextBits(StreamData* stream, int count); // Max 16 bits
+
+		static void writeBit(StreamData* stream, bool bit);
+		static void writeBits(StreamData* stream, int count, uint16_t bits);
+
+		void writeCode(StreamData* stream, uint16_t code, uint8_t codeLen);
 
 		void calculateCodes(uint8_t* lengths, uint16_t* codesOut, int codeCount);
 
 		void buildHuffmanTree(uint8_t* lengths, uint16_t* codes, int codeCount);
 		void buildHuffmanTree(uint8_t* lengths, uint16_t* codes, int codeCount, HuffmanTree* treeOut);
-
+		
+		void getStaticHuffmanCodes(uint16_t* codesOut, uint8_t* codeLensOut, uint16_t* distCodesOut, uint8_t* distCodeLensOut);
+		
 		void buildStaticHuffmanTree();
 		void buildStaticHuffmanTree(HuffmanTree* treeOut, HuffmanTree* distTreeOut);
 
@@ -52,6 +70,7 @@ namespace TehImage
 		uint16_t getNextCode(StreamData* stream, HuffmanTree* tree);
 
 		int decodeData(uint8_t* data, unsigned long length, uint8_t* out, unsigned long outLength);
+		int encodeData(uint8_t* data, unsigned long length, uint8_t* out, unsigned long outLength);
 	};
 	
 }

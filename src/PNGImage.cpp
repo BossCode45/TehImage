@@ -185,7 +185,7 @@ namespace TehImage
 
 		char outData[1024];
 
-		ZLibInflator inflator;
+		ZLib inflator;
 		inflator.decodeData((uint8_t*)compressedData, chunkSize - 4, (uint8_t*)outData, 1024);
 
 		cout << "iCCP not supported" << endl;
