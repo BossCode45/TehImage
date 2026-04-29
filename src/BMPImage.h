@@ -12,6 +12,7 @@ namespace TehImage
 	private:
 	public:
 		// template<std::derived_from<Image> T> BMPImage(const T& other) : Image(other) { }
+		BMPImage() = default;
 		BMPImage(const Image& other) : Image(other) {}
 	
 		int readFromFile(std::string filename) override;

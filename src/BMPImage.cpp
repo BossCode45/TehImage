@@ -1,7 +1,9 @@
 #include "BMPImage.h"
+#include "reader.h"
 
 #include <cstdint>
 #include <iostream>
+#include <memory>
 
 using std::cout, std::endl;
 
@@ -10,7 +12,55 @@ namespace TehImage
 
 	int BMPImage::readFromFile(std::string filename)
 	{
-		cout << "Not implemented" << endl;
+		Reader reader(filename, FileEndianness::LITTLE);
+
+		char magic[2];
+		uint8_t expected[] = {0x42, 0x4D};
+		reader.readBytes(magic, 2);
+		uint32_t fileSize = reader.readData<uint32_t>();
+		reader.skipBytes(4);
+		uint32_t offset = reader.readData<uint32_t>();
+
+		if(strncmp(magic, (char*)expected, 2) != 0)
+		{
+			cout << "Not a BMP" << endl;
+			return 1;
+		}
+
+		uint32_t headerSize = reader.readData<uint32_t>();
+
+		// BITMAPINFOHEADER
+		if(headerSize == 40)
+		{
+			width = reader.readData<uint32_t>();
+			height = reader.readData<uint32_t>();
+			uint16_t colorPlanes = reader.readData<uint16_t>();
+			bpp = reader.readData<uint16_t>();
+			uint32_t compressionMethod = reader.readData<uint32_t>();
+			uint32_t size = reader.readData<uint32_t>();
+			uint32_t horrRes = reader.readData<uint32_t>();
+			uint32_t vertRes = reader.readData<uint32_t>();
+			uint32_t paletteSize = reader.readData<uint32_t>();
+			uint32_t importantColors = reader.readData<uint32_t>();
+
+			pixels = std::make_unique<Pixel[]>(width * height);
+
+			for(int y = height-1; y >= 0; y--)
+			{
+				for(int x = 0; x < width; x++)
+				{
+					Pixel& pixel = (*this)[x,y];
+					pixel.b = reader.readByte();
+					pixel.g = reader.readByte();
+					pixel.r = reader.readByte();
+					pixel.a = 255;
+				}
+			}
+			
+			// cout << compressionMethod << " " << size << endl;
+		}
+		
+		// cout << "Not implemented" << endl;
 		return 2;
 	};
 
