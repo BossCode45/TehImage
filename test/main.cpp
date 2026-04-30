@@ -58,6 +58,7 @@ int main(int argc, char* argv[])
 
 	TehImage::BMPImage bmp;
 	bmp.readFromFile(infile);
+	bmp.writeToFile(outfile);
 	
 
 	// TehImage::PNGImage png;

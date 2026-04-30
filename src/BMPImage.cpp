@@ -29,36 +29,60 @@ namespace TehImage
 
 		uint32_t headerSize = reader.readData<uint32_t>();
 
+		// BITMAPCOREHEADER
+		if(headerSize == 12)
+		{
+			width = reader.readData<uint16_t>();
+			height = reader.readData<uint16_t>();
+			uint16_t colorPlanes = reader.readData<uint16_t>();
+			bpp = reader.readData<uint16_t>();
+		}
 		// BITMAPINFOHEADER
-		if(headerSize == 40)
+		else if(headerSize == 40)
 		{
 			width = reader.readData<uint32_t>();
 			height = reader.readData<uint32_t>();
 			uint16_t colorPlanes = reader.readData<uint16_t>();
 			bpp = reader.readData<uint16_t>();
 			uint32_t compressionMethod = reader.readData<uint32_t>();
+			if(compressionMethod != 0)
+			{
+				cout << "Compression method not supported: " << compressionMethod << endl;
+				return 1;
+			}
 			uint32_t size = reader.readData<uint32_t>();
 			uint32_t horrRes = reader.readData<uint32_t>();
 			uint32_t vertRes = reader.readData<uint32_t>();
 			uint32_t paletteSize = reader.readData<uint32_t>();
 			uint32_t importantColors = reader.readData<uint32_t>();
-
-			pixels = std::make_unique<Pixel[]>(width * height);
-
-			for(int y = height-1; y >= 0; y--)
-			{
-				for(int x = 0; x < width; x++)
-				{
-					Pixel& pixel = (*this)[x,y];
-					pixel.b = reader.readByte();
-					pixel.g = reader.readByte();
-					pixel.r = reader.readByte();
-					pixel.a = 255;
-				}
-			}
-			
 			// cout << compressionMethod << " " << size << endl;
 		}
+		else
+		{
+			cout << "Header type not supported: " << headerSize << endl;
+			return 1;
+		}
+
+		
+		if(bpp != 24)
+		{
+			cout << "bpp not supported: " << bpp << endl;
+			return 1;
+		}
+
+		pixels = std::make_unique<Pixel[]>(width * height);
+		for(int y = height-1; y >= 0; y--)
+		{
+			for(int x = 0; x < width; x++)
+			{
+				Pixel& pixel = (*this)[x,y];
+				pixel.b = reader.readByte();
+				pixel.g = reader.readByte();
+				pixel.r = reader.readByte();
+				pixel.a = 255;
+			}
+		}
+			
 		
 		// cout << "Not implemented" << endl;
 		return 2;
