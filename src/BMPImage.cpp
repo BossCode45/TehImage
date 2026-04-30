@@ -81,6 +81,7 @@ namespace TehImage
 				pixel.r = reader.readByte();
 				pixel.a = 255;
 			}
+			reader.skipBytes((width * 3)%4);
 		}
 			
 		
@@ -92,7 +93,8 @@ namespace TehImage
 	{
 		FILE* fd = fopen(filename.c_str(), "w");
 		char magic[] = "BM";
-		uint32_t fileSize = 14 + 12 + width*height*/*(bitDepth/8)*/8*3;
+		uint32_t rowSize = (bpp * width + 31)/32;
+		uint32_t fileSize = 14 + 12 + rowSize*height*/*(bitDepth/8)*/8*3;
 		char zero[] = "\0\0\0\0";
 		uint32_t offset = 26;
 		uint32_t headerSize = 12;
@@ -121,6 +123,7 @@ namespace TehImage
 				fwrite(&pixel.g, sizeof(uint8_t), 1, fd);
 				fwrite(&pixel.r, sizeof(uint8_t), 1, fd);
 			}
+			fwrite(zero, sizeof(char), (width * 3)%4, fd);
 		}
 
 		fclose(fd);
