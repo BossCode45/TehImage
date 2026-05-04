@@ -81,7 +81,8 @@ namespace TehImage
 				pixel.r = reader.readByte();
 				pixel.a = 255;
 			}
-			reader.skipBytes((width * 3)%4);
+			
+			reader.skipBytes((4-((width * 3)%4))%4);
 		}
 			
 		
@@ -123,7 +124,7 @@ namespace TehImage
 				fwrite(&pixel.g, sizeof(uint8_t), 1, fd);
 				fwrite(&pixel.r, sizeof(uint8_t), 1, fd);
 			}
-			fwrite(zero, sizeof(char), (width * 3)%4, fd);
+			fwrite(zero, sizeof(char), (4-((width * 3)%4))%4, fd);
 		}
 
 		fclose(fd);
