@@ -1,6 +1,6 @@
 #pragma once
 
-#include "reader.h"
+#include "files.h"
 #include "image.h"
 #include "zlib.h"
 #include <cstddef>

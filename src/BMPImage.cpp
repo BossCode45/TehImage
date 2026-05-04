@@ -1,5 +1,5 @@
 #include "BMPImage.h"
-#include "reader.h"
+#include "files.h"
 
 #include <cstdint>
 #include <iostream>
@@ -92,42 +92,42 @@ namespace TehImage
 
 	int BMPImage::writeToFile(std::string filename)
 	{
-		FILE* fd = fopen(filename.c_str(), "w");
+		Writer writer(filename, LITTLE);
 		char magic[] = "BM";
 		uint32_t rowSize = (bpp * width + 31)/32;
 		uint32_t fileSize = 14 + 12 + rowSize*height*/*(bitDepth/8)*/8*3;
-		char zero[] = "\0\0\0\0";
+		// char zero[] = "\0\0\0\0";
 		uint32_t offset = 26;
 		uint32_t headerSize = 12;
 		uint16_t width = this->width;
 		uint16_t height = this->height;
 		uint16_t colorPlanes = 1;
-		uint16_t bitsPerPixel = /*bitDepth*/8*3;
-	
-		fwrite(magic, sizeof(char), 2, fd);
-		fwrite(&fileSize, sizeof(uint32_t), 1, fd);
-		fwrite(zero, sizeof(char), 4, fd);
-		fwrite(&offset, sizeof(uint32_t), 1, fd);
-		fwrite(&headerSize, sizeof(uint32_t), 1, fd);
+		uint16_t bitsPerPixel = /*bpp*/8*3;
 
-		fwrite(&width, sizeof(uint16_t), 1, fd);
-		fwrite(&height, sizeof(uint16_t), 1, fd);
-		fwrite(&colorPlanes, sizeof(uint16_t), 1, fd);
-		fwrite(&bitsPerPixel, sizeof(uint16_t), 1, fd);
+		writer.writeBytes(magic, 2);
+		writer.writeData(fileSize);
+		writer.zeroBytes(4);
+		writer.writeData(offset);
+		writer.writeData(headerSize);
+
+		writer.writeData(width);
+		writer.writeData(height);
+		writer.writeData(colorPlanes);
+		writer.writeData(bitsPerPixel);
 
 		for(int y = height-1; y >= 0; y--)
 		{
 			for(int x = 0; x < width; x++)
 			{
 				Pixel& pixel = (*this)[x,y];
-				fwrite(&pixel.b, sizeof(uint8_t), 1, fd);
-				fwrite(&pixel.g, sizeof(uint8_t), 1, fd);
-				fwrite(&pixel.r, sizeof(uint8_t), 1, fd);
+				writer.writeData(pixel.b);
+				writer.writeData(pixel.g);
+				writer.writeData(pixel.r);
 			}
-			fwrite(zero, sizeof(char), (4-((width * 3)%4))%4, fd);
+			writer.zeroBytes((4-((width * 3)%4))%4);
 		}
 
-		fclose(fd);
+		writer.close();
 	
 		return 0;
 	};

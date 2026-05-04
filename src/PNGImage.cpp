@@ -1,5 +1,5 @@
 #include "PNGImage.h"
-#include "reader.h"
+#include "files.h"
 #include "zlib.h"
 #include "debug.h"
 

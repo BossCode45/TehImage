@@ -1,5 +1,4 @@
 #include <bitset>
-#include <reader.h>
 #include <debug.h>
 #include <PNGImage.h>
 #include <BMPImage.h>
