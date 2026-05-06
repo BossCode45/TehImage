@@ -77,7 +77,10 @@ namespace TehImage
 		writer->writeBytes((char*)signature, 8);
 
 		writeIHDR();
+		writeIDAT();
 		writeIEND();
+
+		writer->close();
 		
 		return 2;
 	};
@@ -88,18 +91,21 @@ namespace TehImage
 			return false;
 		uint32_t chunkSize = reader->readData<uint32_t>();
 	
-		char chunkType[4];
+		char chunkType[5];
 		reader->readBytes(chunkType, 4);
+		chunkType[4] = 0;
 		std::string chunkName(chunkType, 4);
-		debug(
-			cout << "-------------" << endl;
-			cout << "|Chunk: " << chunkName << "|" << endl;
-			cout << "-------------" << endl;
-			);
+		cout << "-------------" << endl;
+		cout << "|Chunk: " << chunkName << "|" << endl;
+		cout << "-------------" << endl;
 
 		if(chunkReaders.count(chunkName) == 0)
 		{
-			cout << "Chunk reader not found!!!" << endl;
+			cout << "Chunk reader not found!!! " << chunkName << endl;
+			// for(int i = 0; i < 4; i++)
+			// 	cout << 0+chunkType[i] << ' ';
+			// cout << endl;
+			
 			reader->skipBytes(chunkSize + 4);
 			if(islower(chunkType[0]))
 			{
@@ -150,15 +156,6 @@ namespace TehImage
 		// cout << "Assigning " << imageDataSize << " bytes for image" << endl;
 
 		pixels = std::make_unique<Pixel[]>(width * height);
-	
-/*
-  Scanline<RGBPixel<uint8_t>>* lines = new Scanline<RGBPixel<uint8_t>> [height];
-  for(int i = 0; i < height; i++)
-  {
-  lines[i].pixels = new RGBPixel<uint8_t>[width];
-  }
-  imageData = (uint8_t*)lines;
-*/
 	}
 
 	DEFINE_CHUNK_READER(iCCP)
@@ -172,7 +169,7 @@ namespace TehImage
 			c = reader->readByte();
 			chunkSize--;
 		}
-		cout << profileName << endl;
+		// cout << profileName << endl;
 		uint8_t compresssionMethod = reader->readByte();
 		chunkSize--;
 		cout << 0+compresssionMethod << endl;
@@ -187,7 +184,7 @@ namespace TehImage
 		chunkSize--;
 		if(CM != 8)
 			cout << "Invalid CM: " << 0+CM << endl;
-		cout << 0+CM << ", " << 0+CINFO << ", " << (check?"Valid":"Failed checksum") << ", " << (FDICT?"Dict is present":"No dict present") << ", " << 0+FLEVEL << endl;
+		// cout << 0+CM << ", " << 0+CINFO << ", " << (check?"Valid":"Failed checksum") << ", " << (FDICT?"Dict is present":"No dict present") << ", " << 0+FLEVEL << endl;
 		char compressedData[chunkSize - 4];
 		reader->readBytes(compressedData, chunkSize - 4);
 
@@ -215,21 +212,21 @@ namespace TehImage
 		reader->readBytes(endian, 4);
 		for(int i = 0; i < 2; i++)
 		{
-			cout << endian[i];
+			// cout << endian[i];
 		}
 		for(int i = 2; i < 4; i++)
 		{
-			cout << " " << 0+endian[i];
+			// cout << " " << 0+endian[i];
 		}
-		cout << endl;
+		// cout << endl;
 		char rest[chunkSize - 4];
 		reader->readBytes(rest, chunkSize - 4);
-		cout << std::hex;
+		// cout << std::hex;
 		for(int i = 0; i < chunkSize - 4; i++)
 		{
-			cout << 0+rest[i] << " ";
+			// cout << 0+rest[i] << " ";
 		}
-		cout << std::dec << endl;
+		// cout << std::dec << endl;
 	}
 
 	DEFINE_CHUNK_READER(iDOT)
@@ -299,6 +296,7 @@ namespace TehImage
 			if(CM != 8)
 				cout << "Invalid CM: " << 0+CM << endl;
 			cout << 0+CM << ", " << 0+CINFO << ", " << (check?"Valid":"Failed checksum") << ", " << (FDICT?"Dict is present":"No dict present") << ", " << 0+FLEVEL << endl;
+			// cout << 0 + CMF << " " << 0 + FLG << endl;
 			idatData = (uint8_t*)malloc(0);
 		}
 
@@ -453,25 +451,66 @@ namespace TehImage
 		
 		writer->writeData(width);
 		writer->writeData(height);
-		writer->writeData(bpp);
+		writer->writeData<uint8_t>(8); // bpp
 		writer->writeData<uint8_t>(ColorTypes::TRUECOLOR | ColorTypes::ALPHA);
 		writer->writeData<uint8_t>(0); // Compression method
 		writer->writeData<uint8_t>(0); // Filter method
 		writer->writeData<uint8_t>(0); // Interlace method
 
 		uint32_t CRC = calculateCRC((uint8_t*)writer->buffer, writer->pos);
-		// cout << CRC << endl;
 		writer->writeData(CRC);
 	}
 
 	DEFINE_CHUNK_WRITER(IDAT)
 	{
-		uint32_t chunkSize = 0;
+		unsigned long imageDataSize = height * (width * 4 + 1);
+		uint8_t* pngImageData = new uint8_t[imageDataSize];
+
+		for(int y = 0; y < height; y++)
+		{
+			pngImageData[y*(width*4 + 1)] = 0;
+			for(int x = 0; x < width; x++)
+			{
+				pngImageData[y*(width*4 + 1) + 1 + x*4 + 0] = (*this)[x, y].r;
+				pngImageData[y*(width*4 + 1) + 1 + x*4 + 1] = (*this)[x, y].g;
+				pngImageData[y*(width*4 + 1) + 1 + x*4 + 2] = (*this)[x, y].b;
+				pngImageData[y*(width*4 + 1) + 1 + x*4 + 3] = (*this)[x, y].a;
+			}
+		}
+
+		ZLib encoder;
+		uint8_t compressed[WRITER_BUFFER_SIZE];
+
+		size_t encodedSize = encoder.encodeData(pngImageData, imageDataSize, compressed, WRITER_BUFFER_SIZE);
+
+		// uint8_t *test = new uint8_t[imageDataSize];
+		// ZLib decoder;
+		// size_t decodeSize = decoder.decodeData(compressed, encodedSize, test, imageDataSize);
+		// if(decodeSize != imageDataSize)
+		// 	cout << "Wrong size" << endl;
+		// if(memcmp(pngImageData, test, imageDataSize) != 0)
+		// 	cout << "Wrong data" << endl;
+
+		// encoder.decodeData(compressed, encodedSize, pngImageData, imageDataSize);
+		
+		uint32_t chunkSize = encodedSize + 2;
+		
+		delete[] pngImageData;
 		writer->writeData(chunkSize);
 		writer->flushBuffer();
 		
 		char header[] = "IDAT";
 		writer->writeBytes(header, 4);
+
+		writer->writeByte(120);
+		writer->writeByte(1);
+
+		writer->writeBytes((char*)compressed, encodedSize);
+
+		// writer->zeroBytes(4);
+		
+		uint32_t CRC = calculateCRC((uint8_t*)writer->buffer, writer->pos);
+		writer->writeData(CRC);
 	}
 
 	DEFINE_CHUNK_WRITER(IEND)
@@ -484,7 +523,6 @@ namespace TehImage
 		writer->writeBytes(header, 4);
 
 		uint32_t CRC = calculateCRC((uint8_t*)writer->buffer, writer->pos);
-		// cout << CRC << endl;
 		writer->writeData(CRC);
 	}
 }

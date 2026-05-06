@@ -42,9 +42,9 @@ int main(int argc, char* argv[])
 	// return 0;
 
 	
-	if(argc < 3)
+	if(argc < 4)
 	{
-		cout << "usage: " << argv[0] << " <in file> <out file>" << endl;
+		cout << "usage: " << argv[0] << " <in file> <tmpfile> <outfile>" << endl;
 		return 1;
 	}
 
@@ -83,18 +83,19 @@ int main(int argc, char* argv[])
 	// return 0;
 	
 	std::string infile = argv[1];
-	std::string outfile = argv[2];
+	std::string tmpfile = argv[2];
+	std::string outfile = argv[3];
 
 	TehImage::BMPImage bmp;
 	bmp.readFromFile(infile);
 
 	TehImage::PNGImage png(bmp);
-	png.writeToFile(outfile);
+	png.writeToFile(tmpfile);
 	
 
-	// TehImage::PNGImage png;
-	// png.readFromFile(infile);
+	TehImage::PNGImage png2;
+	png2.readFromFile(tmpfile);
 	
-	// TehImage::BMPImage bmp(png);
-	// bmp.writeToFile(outfile);
+	TehImage::BMPImage bmp2(png2);
+	bmp.writeToFile(outfile);
 }

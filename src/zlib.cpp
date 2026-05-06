@@ -5,6 +5,7 @@
 #include <bitset>
 #include <cstdint>
 #include <cstring>
+#include <exception>
 #include <iomanip>
 #include <iostream>
 #include <stdexcept>
@@ -274,7 +275,6 @@ namespace TehImage
 		long byte = stream->pos / 8;
 		if(byte >= stream->length)
 		{
-			cout << byte << " " << stream->length << endl;
 			throw std::out_of_range("Ran out of compressed data");
 		}
 		stream->pos++;
@@ -334,7 +334,6 @@ namespace TehImage
 		bool final;
 		do
 		{
-
 			final = nextBit(&stream);
 			CompressionType method = (CompressionType)nextBits(&stream, 2);
 
@@ -368,6 +367,8 @@ namespace TehImage
 			do
 			{
 				code = getNextCode(&stream);
+				
+				// cout << 'a' << endl;
 				if(outPos > outLength && code != 256)
 				{
 					throw std::out_of_range("No more space left in image (normal)");
@@ -376,10 +377,14 @@ namespace TehImage
 					out[outPos++] = (uint8_t)code;
 				else if(code > 256)
 				{
+					// cout << 'b' << endl;
 					unsigned int len = lenStart[code-257] + (int)nextBits(&stream, lenExtra[code-257]);
+					// cout << 'c' << endl;
 					unsigned int distCode = getNextCode(&stream, &distTree);
+					// cout << 'd' << endl;
 				
 					unsigned int dist = distStart[distCode] + (int)nextBits(&stream, distExtra[distCode]);
+					// cout << 'e' << endl;
 					if(outPos + len > outLength)
 					{
 						throw std::out_of_range("No more space left in image (RLE error)");
@@ -389,7 +394,9 @@ namespace TehImage
 						out[outPos] = out[outPos - dist];
 						outPos++;
 					}
+					// cout << 'f' << endl;
 				}
+				// cout << 'z' << endl;
 			}
 			while(code != 256);
 		}
@@ -440,7 +447,7 @@ namespace TehImage
 			getStaticHuffmanCodes(codes, codeLens, distCodes, distCodeLens);
 
 			// cout << inPos << " " << length << endl;
-			HashTable hashTable(255);
+			HashTable hashTable(256);
 			while(inPos < length)
 			{
 				if(inPos + 2 >= length)
@@ -451,22 +458,26 @@ namespace TehImage
 				}
 				
 				char curr[3];
-				memcpy(curr, &data[inPos], 3);
-				if(hashTable.contains(curr))
+				memcpy(curr, &(data[inPos]), 3);
+				if(hashTable.contains(curr) && inPos - hashTable.get(curr) < 32768)
 				{
 					unsigned long pos = hashTable.get(curr);
 					int length = 3;
-					while(data[pos + length] == data[inPos + length])
+					while(data[pos + length] == data[inPos + length]
+						  && pos + length < inPos && length < 258)
 						length++;
+					// length--;
 
-					
+					bool lFound = false, dFound = false;
 					uint16_t lenCode, lenExtraBits;
-					for(uint16_t i = 0; i < 30; i++)
+					for(uint16_t i = 0; i < 29; i++)
 					{
 						if(lenStart[i] <= length && lenStart[i] + (0b1 << lenExtra[i]) - 1 >= length)
 						{
 							lenCode = i;
 							lenExtraBits = length - lenStart[i];
+							lFound = true;
+							break;
 						}
 					}
 					unsigned long dist = inPos - pos;
@@ -476,8 +487,17 @@ namespace TehImage
 						if(distStart[i] <= dist && distStart[i] + (0b1 << distExtra[i]) - 1 >= dist)
 						{
 							distCode = i;
-							distExtraBits = dist - distCodes[i];
+							distExtraBits = dist - distStart[i];
+							dFound = true;
+							break;
 						}
+					}
+
+					if(!(lFound && dFound))
+					{
+						cout << ((lFound)?'y':'n') << " " << ((dFound)?'y':'n') << endl;
+						cout << length << " " << dist << endl;
+						throw std::runtime_error("UH OH");
 					}
 
 					writeCode(&outStream, codes[lenCode + 257], codeLens[lenCode + 257]);
@@ -494,6 +514,8 @@ namespace TehImage
 					inPos++;
 				}
 			}
+
+			writeCode(&outStream, codes[256], codeLens[256]);
 			
 			return (outStream.pos / 8) + ((outStream.pos % 8 == 0)?0:1);
 		}
