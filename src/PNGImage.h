@@ -10,16 +10,28 @@
 #include <string>
 #include <vector>
 
-#define CHUNK_READER(X) void X(uint32_t chunkSize)
-#define REGISTER_CHUNK_READER(X) chunkReaders.insert({#X, &PNGImage::X})
-#define DEFINE_CHUNK_READER(X) void PNGImage::X(uint32_t chunkSize)
+#define CHUNK_READER(X) void read##X(uint32_t chunkSize)
+#define REGISTER_CHUNK_READER(X) chunkReaders.insert({#X, &PNGImage::read##X})
+#define DEFINE_CHUNK_READER(X) void PNGImage::read##X(uint32_t chunkSize)
+
+#define CHUNK_WRITER(X) void write##X()
+#define DEFINE_CHUNK_WRITER(X) void PNGImage::write##X()
+
+
 
 namespace TehImage
 {
-
 	class PNGImage : public Image
 	{
 	public:
+		typedef enum
+		{
+			GRAYSCALE = 0,
+			TRUECOLOR = 2,
+			INDEXED = 3,
+			ALPHA = 4
+		} ColorTypes;
+		
 		PNGImage();
 		~PNGImage();
 
@@ -44,8 +56,6 @@ namespace TehImage
 		uint8_t hour;
 		uint8_t minute;
 		uint8_t second;
-
-		bool readNextChunk();
 	
 	private:
 		std::map<std::string, void(PNGImage::*)(uint32_t chunkSize)> chunkReaders;
@@ -60,6 +70,18 @@ namespace TehImage
 		CHUNK_READER(IDAT);
 		CHUNK_READER(IEND);
 
+		CHUNK_WRITER(IHDR);
+		CHUNK_WRITER(IDAT);
+		CHUNK_WRITER(IEND);
+
+		
+
+		bool readNextChunk();
+
+		uint32_t calculateCRC(uint8_t *buffer, std::size_t bufflen);
+
+		const uint64_t PNG_CRC = 0x104C11DB7;
+
 		ZLib zlib;
 		uint8_t* idatData;
 		unsigned long idatDataSize;
@@ -67,6 +89,7 @@ namespace TehImage
 		bool end = false;
 
 		Reader *reader;
+		Writer *writer;
 	};
 
 }

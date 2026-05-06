@@ -4,6 +4,7 @@
 #include <string>
 
 #define READER_BUFFER_SIZE 4096
+#define WRITER_BUFFER_SIZE 4096
 
 #define DEFINE_INT_READER(TYPE)											\
 	template<> TYPE Reader::readData<TYPE>()							\
@@ -78,8 +79,12 @@ namespace TehImage
 		void zeroBytes(std::size_t len);
 
 		void close();
+
+		void flushBuffer();
+		
+		char buffer[WRITER_BUFFER_SIZE];
+		std::size_t pos;
 	private:
-		/* std::size_t pos; */
 		FILE* file;
 		bool ready = false;
 		FileEndianness fileEndianness;

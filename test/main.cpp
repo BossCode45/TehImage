@@ -12,6 +12,36 @@ using std::cout, std::endl;
 
 int main(int argc, char* argv[])
 {
+	// uint8_t poly = 0b10011;
+	// uint32_t data = 0b11010110110000;
+	// uint32_t ones = 0b11111;
+	// char dashes[15];
+	// memset(dashes, '-', 14);
+	// dashes[14] = 0;
+	// for(int i = 9; i >= 0; i--)
+	// {
+	// 	uint32_t shiftedPoly = poly << i;
+	// 	cout << std::bitset<14>(data) << endl << std::bitset<14>(shiftedPoly) << endl << dashes << endl;
+	// 	bool greater = false;
+	// 	for(int j = 4; j >= 0; j++)
+	// 	{
+	// 		if(data & (0b1 << (j+i)))
+	// 		{
+	// 			greater = true;
+	// 			break;
+	// 		}
+	// 		else if (shiftedPoly & (0b1 << (j+i)))
+	// 			break;
+	// 	}
+	// 	if(greater)
+	// 		data ^= shiftedPoly;
+	// }
+
+	// cout << std::bitset<5>(data) << endl;
+	
+	// return 0;
+
+	
 	if(argc < 3)
 	{
 		cout << "usage: " << argv[0] << " <in file> <out file>" << endl;
@@ -57,7 +87,9 @@ int main(int argc, char* argv[])
 
 	TehImage::BMPImage bmp;
 	bmp.readFromFile(infile);
-	bmp.writeToFile(outfile);
+
+	TehImage::PNGImage png(bmp);
+	png.writeToFile(outfile);
 	
 
 	// TehImage::PNGImage png;

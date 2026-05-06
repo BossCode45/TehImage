@@ -70,7 +70,15 @@ namespace TehImage
 
 	int PNGImage::writeToFile(std::string filename)
 	{
-		cout << "Not implemented" << endl;
+		std::unique_ptr<Writer> writerMem(new Writer(filename, FileEndianness::BIG));
+		writer = writerMem.get();
+
+		uint8_t signature[] = {137, 80, 78, 71, 13, 10, 26, 10};
+		writer->writeBytes((char*)signature, 8);
+
+		writeIHDR();
+		writeIEND();
+		
 		return 2;
 	};
 
@@ -403,4 +411,80 @@ namespace TehImage
 		delete [] rawImage;
 	}
 
+	static uint32_t CRCTable[256];
+	static bool CRCComputed = false;
+
+	static void generateCRC()
+	{
+		for(uint32_t i = 0; i < 256; i++)
+		{
+			uint32_t c = i;
+			for(int bit = 0; bit < 8; bit++)
+			{
+				if(c & 1)
+					c = 0xEDB88320 ^ (c >> 1);
+				else
+					c >>= 1;
+			}
+			CRCTable[i] = c;
+		}
+		CRCComputed = true;
+	}
+
+	uint32_t PNGImage::calculateCRC(uint8_t* buffer, std::size_t bufflen)
+	{
+		uint32_t reg = 0xFFFFFFFF;
+		if (!CRCComputed)
+			generateCRC();
+		for (int i = 0; i < bufflen; i++) {
+			reg = CRCTable[(reg ^ buffer[i]) & 0xff] ^ (reg >> 8);
+		}
+		return reg^0xFFFFFFFF;
+	}
+	
+
+	DEFINE_CHUNK_WRITER(IHDR)
+	{
+		uint32_t chunkSize = 13;
+		writer->writeData(chunkSize);
+		writer->flushBuffer();
+		char header[] = "IHDR";
+		writer->writeBytes(header, 4);
+		
+		writer->writeData(width);
+		writer->writeData(height);
+		writer->writeData(bpp);
+		writer->writeData<uint8_t>(ColorTypes::TRUECOLOR | ColorTypes::ALPHA);
+		writer->writeData<uint8_t>(0); // Compression method
+		writer->writeData<uint8_t>(0); // Filter method
+		writer->writeData<uint8_t>(0); // Interlace method
+
+		uint32_t CRC = calculateCRC((uint8_t*)writer->buffer, writer->pos);
+		// cout << CRC << endl;
+		writer->writeData(CRC);
+	}
+
+	DEFINE_CHUNK_WRITER(IDAT)
+	{
+		uint32_t chunkSize = 0;
+		writer->writeData(chunkSize);
+		writer->flushBuffer();
+		
+		char header[] = "IDAT";
+		writer->writeBytes(header, 4);
+	}
+
+	DEFINE_CHUNK_WRITER(IEND)
+	{
+		uint32_t chunkSize = 0;
+		writer->writeData(chunkSize);
+		writer->flushBuffer();
+		
+		char header[] = "IEND";
+		writer->writeBytes(header, 4);
+
+		uint32_t CRC = calculateCRC((uint8_t*)writer->buffer, writer->pos);
+		// cout << CRC << endl;
+		writer->writeData(CRC);
+	}
 }

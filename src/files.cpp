@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <stdexcept>
 
 
 using std::cout, std::endl;
@@ -124,14 +125,17 @@ namespace TehImage
 
 	void Writer::writeByte(char toWrite)
 	{
-		fwrite(&toWrite, sizeof(char), 1, file);
+		if(pos == WRITER_BUFFER_SIZE)
+			throw std::out_of_range("Writer buffer ran out single-byte!!!");
+		buffer[pos++] = toWrite;
 	}
 
 	void Writer::writeBytes(char toWrite[], std::size_t len)
 	{
-		// for(int i = 0; i < len; i++)
-		// 	cout << toWrite[i] << endl;
-		fwrite(toWrite, sizeof(char), len, file);
+		if(pos + len > WRITER_BUFFER_SIZE)
+			throw std::out_of_range("Writer buffer ran out multi-byte!!!");
+		memcpy(&(buffer[pos]), toWrite, len);
+		pos += len;
 	}
 
 	void Writer::zeroBytes(std::size_t len)
@@ -145,8 +149,19 @@ namespace TehImage
 	void Writer::close()
 	{
 		if(ready)
+		{
+			flushBuffer();
 			fclose(file);
+		}
 		ready = false;
+	}
+
+	void Writer::flushBuffer()
+	{
+		if(!ready)
+			throw std::logic_error("Cannot flush buffer before opening file");
+		fwrite(buffer, sizeof(char), pos, file);
+		pos = 0;
 	}
 
 	template <> void Writer::writeData(uint8_t toWrite)
