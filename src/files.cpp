@@ -115,6 +115,7 @@ namespace TehImage
 		:fileEndianness(fileEndianness)
 	{
 		file = fopen(filename.c_str(), "w");
+		pos = 0;
 		ready = true;
 	}
 	

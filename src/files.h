@@ -4,7 +4,7 @@
 #include <string>
 
 #define READER_BUFFER_SIZE 4096
-#define WRITER_BUFFER_SIZE 4096
+#define WRITER_BUFFER_SIZE 65536
 
 #define DEFINE_INT_READER(TYPE)											\
 	template<> TYPE Reader::readData<TYPE>()							\

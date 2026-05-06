@@ -117,6 +117,7 @@ namespace TehImage
 
 		for(int y = height-1; y >= 0; y--)
 		{
+			writer.flushBuffer();
 			for(int x = 0; x < width; x++)
 			{
 				Pixel& pixel = (*this)[x,y];
@@ -125,6 +126,7 @@ namespace TehImage
 				writer.writeData(pixel.r);
 			}
 			writer.zeroBytes((4-((width * 3)%4))%4);
+			writer.flushBuffer();
 		}
 
 		writer.close();
