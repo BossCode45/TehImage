@@ -95,13 +95,13 @@ namespace TehImage
 		reader->readBytes(chunkType, 4);
 		chunkType[4] = 0;
 		std::string chunkName(chunkType, 4);
-		cout << "-------------" << endl;
-		cout << "|Chunk: " << chunkName << "|" << endl;
-		cout << "-------------" << endl;
+		// cout << "-------------" << endl;
+		// cout << "|Chunk: " << chunkName << "|" << endl;
+		// cout << "-------------" << endl;
 
 		if(chunkReaders.count(chunkName) == 0)
 		{
-			cout << "Chunk reader not found!!! " << chunkName << endl;
+			// cout << "Chunk reader not found!!! " << chunkName << endl;
 			// for(int i = 0; i < 4; i++)
 			// 	cout << 0+chunkType[i] << ' ';
 			// cout << endl;
@@ -109,10 +109,10 @@ namespace TehImage
 			reader->skipBytes(chunkSize + 4);
 			if(islower(chunkType[0]))
 			{
-				cout << "\tAble to skip chunk" << endl;
+				// cout << "\tAble to skip chunk" << endl;
 				return true;
 			}
-			cout << "\tFatal error" << endl;
+			// cout << "\tFatal error" << endl;
 			return false;
 		}
 
@@ -133,7 +133,7 @@ namespace TehImage
 		compressionMethod = reader->readData<uint8_t>();
 		filterMethod = reader->readData<uint8_t>();
 		interlaceMethod = reader->readData<uint8_t>();
-		cout << "Width: " << width << ", Height: " << height << ", Bit depth: " << 0+bitDepth << ", Color type: " << 0+colorType << ", Compression method: " << 0+compressionMethod << ", Filter method: " << 0+filterMethod << ", Interlace method: " << 0+interlaceMethod << endl;
+		// cout << "Width: " << width << ", Height: " << height << ", Bit depth: " << 0+bitDepth << ", Color type: " << 0+colorType << ", Compression method: " << 0+compressionMethod << ", Filter method: " << 0+filterMethod << ", Interlace method: " << 0+interlaceMethod << endl;
 
 		if(colorType != 2 && colorType != 6)
 			throw std::invalid_argument("Only color types 2 and 6 are supported");
@@ -172,7 +172,7 @@ namespace TehImage
 		// cout << profileName << endl;
 		uint8_t compresssionMethod = reader->readByte();
 		chunkSize--;
-		cout << 0+compresssionMethod << endl;
+		// cout << 0+compresssionMethod << endl;
 		uint8_t CMF = reader->readByte();
 		uint8_t CM = CMF & 0b00001111;
 		uint8_t CINFO = (CMF & 0b11110000) >> 4;
@@ -193,7 +193,7 @@ namespace TehImage
 		ZLib inflator;
 		inflator.decodeData((uint8_t*)compressedData, chunkSize - 4, (uint8_t*)outData, 1024);
 
-		cout << "iCCP not supported" << endl;
+		// cout << "iCCP not supported" << endl;
 	
 		uint32_t checkValue = reader->readData<uint32_t>();
 
@@ -203,7 +203,7 @@ namespace TehImage
 	DEFINE_CHUNK_READER(sRGB)
 	{
 		renderingIntent = reader->readData<uint8_t>();
-		cout << "Rendering intent: " << 0+renderingIntent << endl;
+		// cout << "Rendering intent: " << 0+renderingIntent << endl;
 	}
 
 	DEFINE_CHUNK_READER(eXIf)
@@ -231,7 +231,7 @@ namespace TehImage
 
 	DEFINE_CHUNK_READER(iDOT)
 	{
-		cout << "!!! Ignoring iDOT !!!" << endl;
+		// cout << "!!! Ignoring iDOT !!!" << endl;
 		reader->skipBytes(chunkSize);
 	}
 
@@ -240,7 +240,7 @@ namespace TehImage
 		pixelsPerX = reader->readData<uint32_t>();
 		pixelsPerY = reader->readData<uint32_t>();
 		unit = reader->readData<uint8_t>();
-		cout << "Pixels per unit (x): " << pixelsPerX << ", Pixels per unit (y): " << pixelsPerY << ", unit: " << 0+unit << endl;
+		// cout << "Pixels per unit (x): " << pixelsPerX << ", Pixels per unit (y): " << pixelsPerY << ", unit: " << 0+unit << endl;
 	}
 
 	DEFINE_CHUNK_READER(tIME)
@@ -251,7 +251,7 @@ namespace TehImage
 		hour = reader->readData<uint8_t>();
 		minute = reader->readData<uint8_t>();
 		second = reader->readData<uint8_t>();
-		cout << "Image last modified: " << 0+hour << ":" << 0+minute << ":" << 0+second << " " << 0+day << "-" << 0+month << "-" << 0+year << endl;
+		// cout << "Image last modified: " << 0+hour << ":" << 0+minute << ":" << 0+second << " " << 0+day << "-" << 0+month << "-" << 0+year << endl;
 	}
 
 	DEFINE_CHUNK_READER(tEXt)
@@ -266,7 +266,7 @@ namespace TehImage
 			c = reader->readByte();
 			chunkSize--;
 		}
-		cout << keyword << endl;
+		// cout << keyword << endl;
 		std::string textString;
 		c = reader->readByte();
 		chunkSize--;
@@ -277,7 +277,7 @@ namespace TehImage
 			chunkSize--;
 		}
 		textString.push_back(c);
-		cout << textString << endl;
+		// cout << textString << endl;
 	}
 
 	DEFINE_CHUNK_READER(IDAT)
@@ -295,7 +295,7 @@ namespace TehImage
 			chunkSize--;
 			if(CM != 8)
 				cout << "Invalid CM: " << 0+CM << endl;
-			cout << 0+CM << ", " << 0+CINFO << ", " << (check?"Valid":"Failed checksum") << ", " << (FDICT?"Dict is present":"No dict present") << ", " << 0+FLEVEL << endl;
+			// cout << 0+CM << ", " << 0+CINFO << ", " << (check?"Valid":"Failed checksum") << ", " << (FDICT?"Dict is present":"No dict present") << ", " << 0+FLEVEL << endl;
 			// cout << 0 + CMF << " " << 0 + FLG << endl;
 			idatData = (uint8_t*)malloc(0);
 		}
@@ -336,8 +336,7 @@ namespace TehImage
 		unsigned long imageDataSize = height * (width * bpp + 1);
 		uint8_t* pngImageData = new uint8_t[imageDataSize];
 		uint8_t* rawImage = new uint8_t[width * height * bpp];
-		cout << "My inflate " << zlib.decodeData(idatData, idatDataSize, pngImageData, imageDataSize) << endl;
-		end = true;
+		zlib.decodeData(idatData, idatDataSize, pngImageData, imageDataSize);
 		reader->close();
 
 #define imageDataIndex(x, y) rawImage[y*width*bpp + x]
@@ -502,8 +501,9 @@ namespace TehImage
 		char header[] = "IDAT";
 		writer->writeBytes(header, 4);
 
-		writer->writeByte(120);
-		writer->writeByte(1);
+		// Should rewrite to calculate properly, currently just copying from another PNG image
+		writer->writeByte(120); // CMF
+		writer->writeByte(1); // FLG
 
 		writer->writeBytes((char*)compressed, encodedSize);
 

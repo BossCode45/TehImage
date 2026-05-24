@@ -18,7 +18,7 @@ namespace TehImage
 		HashTable(size_t size);
 
 		unsigned int hashFunction(char key[3]);
-		void insert(char key[3], unsigned int value);
+		void insertOrUpdate(char key[3], unsigned int value);
 		void remove(char key[3]);
 		unsigned int get(char key[3]);
 		bool contains(char key[3]);

@@ -134,7 +134,7 @@ namespace TehImage
 	{
 		if(staticTree)
 			return;
-		cout << "Building static tree" << endl;
+		// cout << "Building static tree" << endl;
 		buildStaticHuffmanTree(&tree, &distTree);
 		staticTree = true;
 		haveTree = true;
@@ -510,7 +510,7 @@ namespace TehImage
 				else
 				{
 					writeCode(&outStream, codes[data[inPos]], codeLens[data[inPos]]);
-					hashTable.insert(curr, inPos);
+					hashTable.insertOrUpdate(curr, inPos);
 					inPos++;
 				}
 			}

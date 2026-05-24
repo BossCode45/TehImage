@@ -15,22 +15,22 @@ namespace TehImage
 		return hash % TABLE_SIZE;
 	}
 
-	void HashTable::insert(char key[3], unsigned int value)
+	void HashTable::insertOrUpdate(char key[3], unsigned int value)
 	{
 		unsigned int index = hashFunction(key);
-		unsigned int keyMem = 0;
-		std::memcpy(&keyMem, key, 3);
+		unsigned int keyValue = 0;
+		std::memcpy(&keyValue, key, 3);
 
 		for(auto& pair : table[index])
 		{
-			if(pair.first == keyMem)
+			if(pair.first == keyValue)
 			{
 				pair.second = value;
 				return;
 			}
 		}
 
-		table[index].push_back({keyMem, value});
+		table[index].push_back({keyValue, value});
 	}
 
 	void HashTable::remove(char key[3])
