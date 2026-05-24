@@ -7,7 +7,7 @@
 
 stdenv.mkDerivation {
     pname = "libTehImage";
-    version = "0.0.2";
+    version = "0.0.3";
 
     #outputs = [ "out" "dev" ];
 
@@ -18,8 +18,8 @@ stdenv.mkDerivation {
 
     src = fetchgit {
         url = "https://git.tehbox.org/boss/tehimage.git";
-        rev = "v0.0.2";
-        hash = "sha256-GrCtLFFa3wKHzXuqziobWz4w0tWzbiShkbXS0Obs+rw=";
+        rev = "v0.0.3";
+        hash = "sha256-ujEVV0uIH67nl7SQcYdHc0BFyiUoIpvvyo+Qp3mF5lw=";
     };
 
     preInstall = "mkdir -p $out/include";
